@@ -5,14 +5,15 @@ const utils = require("web3-utils");
 const { hash } = require("eth-ens-namehash");
 const BN = require("bn.js");
 const EthRegistrarSubdomainRegistrar = require("./contracts/EthRegistrarSubdomainRegistrar");
+require('dotenv').config()
 
-const ENS_ADDRESS = "0xd8532Db4d846424Bc1D0D9b08AB45EEf31b6c00F";
-const NODE_URL = "https://api.s0.b.hmny.io";
+const NODE_URL = "https://api.s0.t.hmny.io";
 
-const DOMAIN_NAME = "crazy";
-
+const ENS_ADDRESS = process.env.ENS_ADDRESS;
+const HMY_USER_PRIVATE_KEY = process.env.PRIVATE_KEY;
+const DOMAIN_NAME = process.env.DOMAIN_NAME || 'crazy';
+const SUBDOMAIN_NAME = process.env.SUBDOMAIN_NAME
 const ETH_GAS_LIMIT = 6721900;
-const HMY_USER_PRIVATE_KEY = "XXX";
 
 const web3 = new Web3(NODE_URL);
 // or init with Metamask / OneWallet
@@ -52,15 +53,15 @@ const test = async () => {
     .referralAddress("crazy")
     .call();
 
-  const subdomain = "tes1-1234567";
-  const duration = 31536000; // 1 year
+  const subdomain = SUBDOMAIN_NAME;
+  const duration = 31536000; // 31536000 = 1 year
 
   //check subdomain to free
   let available = await subdomainRegistrar.methods
     .available(hash(`${subdomain}.crazy.one`))
     .call();
 
-  console.log("available", available);
+  console.log("Is available:", available);
 
   if (!available) {
     return;
@@ -84,6 +85,7 @@ const test = async () => {
     "Referrer balance before: ",
     (await web3.eth.getBalance(REFERRER_ADDRESS)) / 1e18
   );
+  // return false
 
   console.log("");
   console.log("------- Start register: ", subdomain);
@@ -108,14 +110,6 @@ const test = async () => {
   console.log("TX STATUS: ", tx.status, tx.transactionHash);
 
   await getLogs(tx.transactionHash);
-
-  const res = await subdomainRegistrar.methods
-    ._setTwitterURI(hash(`${subdomain}.crazy.one`), "new_twitter_name")
-    .send({
-      from: hmyUserAccount,
-      gas: ETH_GAS_LIMIT,
-      gasPrice: new BN(await web3.eth.getGasPrice()).mul(new BN(1)),
-    });
 
   console.log("");
   console.log("-------------- CHECK SUBDOMAIN INFO ----------");
@@ -143,15 +137,6 @@ const test = async () => {
   );
 
   console.log(
-    "User balance after: ",
-    (await web3.eth.getBalance(hmyUserAccount)) / 1e18
-  );
-  console.log(
-    "Referrer balance after: ",
-    (await web3.eth.getBalance(REFERRER_ADDRESS)) / 1e18
-  );
-
-  console.log(
     "date Expires",
     new Date(
       Number(
@@ -160,6 +145,15 @@ const test = async () => {
           .call()
       ) * 1000
     )
+  );
+
+  console.log(
+    "User balance after: ",
+    (await web3.eth.getBalance(hmyUserAccount)) / 1e18
+  );
+  console.log(
+    "Referrer balance after: ",
+    (await web3.eth.getBalance(REFERRER_ADDRESS)) / 1e18
   );
 };
 
